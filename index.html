@@ -169,10 +169,17 @@
       to { opacity: 1; }
     }
     body.meta-faded .input-section label,
+    body.meta-faded .input-section input,
+    body.meta-faded .input-section textarea,
     body.meta-faded .ocr-mode,
     body.meta-faded .ocr-status,
     body.meta-faded .byline {
       opacity: 0.2;
+    }
+    .input-section label,
+    .input-section input,
+    .input-section textarea {
+      transition: opacity 1s ease-out;
     }
     .byline {
       transition: opacity 1s ease-out;
@@ -326,16 +333,24 @@
     }
 
     function cycleDigit(el, fromChar) {
-      const idx = digitsCycle.indexOf(fromChar);
-      const start = idx >= 0 ? idx : 0;
-      let step = start;
-      el.textContent = digitsCycle[step];
+      const digits = digitsCycle;
+      el.textContent = digits[Math.floor(Math.random() * digits.length)];
+      let nines = 0;
       const holdMs = 180 + Math.random() * 380;
       const stepMs = 280 + Math.random() * 320;
       setTimeout(() => {
-        setInterval(() => {
-          step = (step + 1) % digitsCycle.length;
-          el.textContent = digitsCycle[step];
+        const intervalId = setInterval(() => {
+          const d = digits[Math.floor(Math.random() * digits.length)];
+          el.textContent = d;
+          if (d === '9') {
+            nines++;
+            if (nines >= 11) {
+              clearInterval(intervalId);
+              const zeroOrOne = Math.random() < 0.5 ? '0' : '1';
+              el.textContent = zeroOrOne;
+              rollDigitToAscii(el, zeroOrOne);
+            }
+          }
         }, stepMs);
       }, holdMs);
     }
