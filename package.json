@@ -1,0 +1,6 @@
+{
+  "name": "helpful-poem-ocr",
+  "version": "1.0.0",
+  "description": "Single-page poem viewer with optional bad OCR, typo cycle, and slow degradation",
+  "private": true
+}

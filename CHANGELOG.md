@@ -1,0 +1,56 @@
+# Changelog
+
+All notable design and feature changes are versioned with [Semantic Versioning](https://semver.org/).  
+Branches and tags follow `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `release/1.0.0`).
+
+## [1.0.0] - 2025-02-09
+
+### Added
+- Typo cycle: digits cycle through typographical symbols for 3–500+ iterations, then land on random digit and apply roll/cycle rule
+- Slow degradation: poem in bad-OCR mode degrades one character at a time at 45–135s intervals (nearly imperceptible)
+- Yes/No clickable toggle for bad vs accurate OCR (replaces checkbox)
+- Labels and metatext fade after 420ms; click page to fade back in
+- Random typographical substitution pool (letters/digits at low probability) for missing letters
+- DRY refactor: `applyReplacements`, `degradeText`/`degradeLine`, `appendSpan`, `isUnstableChar`
+- Digits 0 and 1 both roll to I
+- Random timing for digit roll and cycle
+
+### Changed
+- All digits (0–9) go through typo cycle before applying digit rule
+
+---
+
+## [0.3.0] - 2025-02-09
+
+### Changed
+- Code review: extract `escapeRegex`, merge digit branches, rename `pageTexts`→`pageBlobs`, remove dead `isDigit`
+- And→ampersand, punctuation-words→symbols (slow appearance), digit cycling for 2–9
+
+---
+
+## [0.2.0] - 2025-02-09
+
+### Added
+- Simulate bad OCR for typed poem text
+- Neon VS Code–style UI (black bg, white text, thinner font)
+- Flicker on fragmentation chars (• · ~ _) and ampersands; slow, varied, sinister
+- File upload (image or PDF) with optional bad OCR
+- Punctuation words→symbols; math words→symbols
+
+### Changed
+- Removed “bad OCR” copy from labels; white labels/status
+
+---
+
+## [0.1.0] - 2025-02-09
+
+### Added
+- Initial single-page poem viewer
+- Default poem: murmur by Cameron Barnett (OCR text)
+- Optional title/author and poem textarea; optional image/PDF upload
+- Digits 0/1 roll to I; math words→symbols; fragmentation-style flicker
+
+[1.0.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.0.0
+[0.3.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.3.0
+[0.2.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.2.0
+[0.1.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.1.0
