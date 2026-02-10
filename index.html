@@ -559,9 +559,19 @@ until yo,u kis.sed m1e.
       if (textNodes.length === 0) return;
       const node = textNodes[Math.floor(Math.random() * textNodes.length)];
       const span = document.createElement('span');
-      span.className = 'unstable';
-      span.textContent = FRAG_CHARS[Math.floor(Math.random() * FRAG_CHARS.length)];
-      node.parentNode.replaceChild(span, node);
+      const useDigit = Math.random() < 0.28;
+      if (useDigit) {
+        const d = String(Math.floor(Math.random() * 10));
+        span.className = 'roll';
+        span.textContent = d;
+        node.parentNode.replaceChild(span, node);
+        if (d === '0' || d === '1') rollDigitToAscii(span, d);
+        else cycleDigit(span, d);
+      } else {
+        span.className = 'unstable';
+        span.textContent = FRAG_CHARS[Math.floor(Math.random() * FRAG_CHARS.length)];
+        node.parentNode.replaceChild(span, node);
+      }
     }
 
     function startSlowDegrade(poemEl) {
