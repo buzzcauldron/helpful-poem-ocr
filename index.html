@@ -8,10 +8,10 @@
     * { box-sizing: border-box; }
     body {
       font-family: "SF Mono", "Consolas", monospace;
-      font-weight: 300;
+      font-weight: 200;
       -webkit-font-smoothing: antialiased;
-      background: #0d0d0d;
-      color: #e0e0e0;
+      background: #0a0a0a;
+      color: #ffffff;
       min-height: 100vh;
       margin: 0;
       padding: 3rem 2rem;
@@ -22,17 +22,19 @@
     }
     .byline {
       font-size: 0.85rem;
-      font-weight: 300;
-      color: #666;
+      font-weight: 200;
+      color: #9aa;
+      text-shadow: 0 0 12px rgba(100, 180, 255, 0.4);
       margin-bottom: 2rem;
     }
     .poem {
       max-width: 420px;
       font-size: 1rem;
-      font-weight: 300;
+      font-weight: 200;
       line-height: 1.8;
       white-space: pre-wrap;
       word-break: break-word;
+      color: #ffffff;
     }
     .poem .stanza { margin-bottom: 1.5rem; }
     .poem .stanza-num {
@@ -54,10 +56,14 @@
     .symbol-roll {
       display: inline-block;
       min-width: 1ch;
+      color: #7dd3fc;
+      text-shadow: 0 0 8px rgba(125, 211, 252, 0.6);
     }
     .unstable {
       display: inline-block;
       animation: unstable 0.32s steps(4, jump-end) infinite;
+      color: #f472b6;
+      text-shadow: 0 0 10px rgba(244, 114, 182, 0.7);
     }
     .unstable:nth-child(6n) { animation-delay: 0s; }
     .unstable:nth-child(6n+1) { animation-delay: -0.04s; }
@@ -66,11 +72,11 @@
     .unstable:nth-child(6n+4) { animation-delay: -0.06s; }
     .unstable:nth-child(6n+5) { animation-delay: -0.15s; }
     @keyframes unstable {
-      0% { transform: translate(0, 0); opacity: 1; color: #e0e0e0; }
-      25% { transform: translate(2px, 0); opacity: 0.35; color: #2a1515; }
-      50% { transform: translate(-1px, 0); opacity: 0.9; color: #c0b0b0; }
-      75% { transform: translate(-2px, 0); opacity: 0.2; color: #1a0a0a; }
-      100% { transform: translate(0, 0); opacity: 1; color: #e0e0e0; }
+      0% { transform: translate(0, 0); opacity: 1; color: #f472b6; text-shadow: 0 0 10px rgba(244, 114, 182, 0.7); }
+      25% { transform: translate(2px, 0); opacity: 0.5; color: #ec4899; text-shadow: 0 0 16px rgba(236, 72, 153, 0.9); }
+      50% { transform: translate(-1px, 0); opacity: 0.9; color: #f9a8d4; text-shadow: 0 0 12px rgba(249, 168, 212, 0.8); }
+      75% { transform: translate(-2px, 0); opacity: 0.4; color: #db2777; text-shadow: 0 0 20px rgba(219, 39, 119, 0.8); }
+      100% { transform: translate(0, 0); opacity: 1; color: #f472b6; text-shadow: 0 0 10px rgba(244, 114, 182, 0.7); }
     }
     .input-section {
       width: 100%;
@@ -80,15 +86,17 @@
     .input-section label {
       display: block;
       font-size: 0.8rem;
-      color: #666;
+      font-weight: 200;
+      color: #8b9;
       margin-bottom: 0.5rem;
     }
     .input-section input,
     .input-section textarea {
       width: 100%;
-      background: #1a1a1a;
-      border: 1px solid #333;
-      color: #e0e0e0;
+      font-weight: 200;
+      background: #0a0a0a;
+      border: 1px solid #2a3a4a;
+      color: #ffffff;
       font-family: inherit;
       font-size: 14px;
       padding: 0.5rem 0.75rem;
@@ -101,7 +109,8 @@
     .input-section input:focus,
     .input-section textarea:focus {
       outline: none;
-      border-color: #555;
+      border-color: #58a6ff;
+      box-shadow: 0 0 0 1px #58a6ff, 0 0 12px rgba(88, 166, 255, 0.35);
     }
     .input-section input[type="file"] {
       padding: 0.25rem 0;
@@ -109,12 +118,13 @@
     }
     .ocr-status {
       font-size: 0.75rem;
-      color: #555;
+      font-weight: 200;
+      color: #6b7;
       margin-top: 0.5rem;
       min-height: 1.2em;
     }
-    .ocr-status.working { color: #888; }
-    .ocr-status.error { color: #822; }
+    .ocr-status.working { color: #7dd3fc; text-shadow: 0 0 8px rgba(125, 211, 252, 0.5); }
+    .ocr-status.error { color: #f87171; text-shadow: 0 0 8px rgba(248, 113, 113, 0.5); }
   </style>
 </head>
 <body>
@@ -123,7 +133,7 @@
     <input type="text" id="byline-input" placeholder="e.g. murmur — Cameron Barnett">
     <label for="poem-input">Your poem (optional — leave blank for default)</label>
     <textarea id="poem-input" placeholder="Paste or type your own poem here..."></textarea>
-    <label for="file-input">Or upload an image — the site will badly OCR it</label>
+    <label for="file-input">Or upload an image or PDF</label>
     <input type="file" id="file-input" accept="image/*,.pdf">
     <p class="ocr-status" id="ocr-status"></p>
   </div>
@@ -332,13 +342,41 @@ until yo,u kis.sed m1e.
       });
     }
 
+    function simulateBadOcr(text) {
+      const frag = ['•', '·', '~', '_'];
+      let out = '';
+      const lines = text.split(/\n/);
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          const n = (li * 997 + i * 31 + c.charCodeAt(0)) % 100;
+          if (n < 5) {
+            out += frag[(li + i) % frag.length];
+          } else if (n < 9 && i > 0 && i < line.length - 1 && /\w/.test(c)) {
+            out += c + '·';
+          } else if (n < 14 && /\w/.test(c)) {
+            if (c === 'o' || c === 'O') out += n % 2 ? '0' : c;
+            else if (c === 'l' || c === 'i' || c === 'I') out += n % 2 ? '1' : c;
+            else out += c;
+          } else {
+            out += c;
+          }
+        }
+        if (li < lines.length - 1) out += '\n';
+      }
+      return out;
+    }
+
     function updateDisplay() {
       const bylineRaw = document.getElementById('byline-input').value.trim();
       const poemRaw = document.getElementById('poem-input').value;
       const bylineEl = document.getElementById('byline');
       const poemEl = document.getElementById('poem');
       bylineEl.textContent = bylineRaw || DEFAULT_BYLINE;
-      poemEl.textContent = poemRaw || DEFAULT_POEM;
+      const isUserPoem = poemRaw && poemRaw !== DEFAULT_POEM;
+      const poemToShow = isUserPoem ? simulateBadOcr(poemRaw) : (poemRaw || DEFAULT_POEM);
+      poemEl.textContent = poemToShow;
       applyToElement(bylineEl);
       applyToElement(poemEl);
     }
@@ -402,7 +440,7 @@ until yo,u kis.sed m1e.
       const file = e.target.files?.[0];
       if (!file) return;
       const status = document.getElementById('ocr-status');
-      status.textContent = 'Running bad OCR…';
+      status.textContent = 'Processing…';
       status.className = 'ocr-status working';
       try {
         let text = '';
@@ -430,7 +468,7 @@ until yo,u kis.sed m1e.
         status.textContent = 'Done.';
         status.className = 'ocr-status';
       } catch (err) {
-        status.textContent = 'OCR failed: ' + (err.message || 'unknown error');
+        status.textContent = 'Failed: ' + (err.message || 'unknown error');
         status.className = 'ocr-status error';
       }
       e.target.value = '';
