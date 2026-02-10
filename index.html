@@ -348,11 +348,17 @@
               clearInterval(intervalId);
               const zeroOrOne = Math.random() < 0.5 ? '0' : '1';
               el.textContent = zeroOrOne;
-              rollDigitToAscii(el, zeroOrOne);
+              applyDigitRule(el, zeroOrOne);
             }
           }
         }, stepMs);
       }, holdMs);
+    }
+
+    /** Canonical digit rules (supercede all other behavior): 0/1 → roll to I; 2–9 → cycle (9×11 → 0/1 → I). */
+    function applyDigitRule(el, d) {
+      if (d === '0' || d === '1') rollDigitToAscii(el, d);
+      else cycleDigit(el, d);
     }
 
     function typoCycleThenDigit(el) {
@@ -368,8 +374,7 @@
           clearInterval(intervalId);
           const d = String(Math.floor(Math.random() * 10));
           el.textContent = d;
-          if (d === '0' || d === '1') rollDigitToAscii(el, d);
-          else cycleDigit(el, d);
+          applyDigitRule(el, d);
           return;
         }
         el.textContent = symbols[step % symbols.length];
@@ -565,8 +570,7 @@ until yo,u kis.sed m1e.
         span.className = 'roll';
         span.textContent = d;
         node.parentNode.replaceChild(span, node);
-        if (d === '0' || d === '1') rollDigitToAscii(span, d);
-        else cycleDigit(span, d);
+        applyDigitRule(span, d);
       } else {
         span.className = 'unstable';
         span.textContent = FRAG_CHARS[Math.floor(Math.random() * FRAG_CHARS.length)];

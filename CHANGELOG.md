@@ -3,6 +3,14 @@
 All notable design and feature changes are versioned with [Semantic Versioning](https://semver.org/).  
 Branches and tags follow `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `release/1.0.0`).
 
+## [1.2.0] - 2025-02-09
+
+### Changed
+- Digit rules (0/1→I, 2–9 cycle with 9×11→0/1) are canonical: `applyDigitRule(el, d)` is the single entry point; typo cycle, cycleDigit 9×11 path, and slow degradation all call it so these rules supercede other behavior
+- Slow degradation: ~28% of replacements insert a random digit 0–9 and run applyDigitRule
+
+---
+
 ## [1.1.0] - 2025-02-09
 
 ### Added
@@ -62,6 +70,7 @@ Branches and tags follow `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `release/1.0.0`).
 - Optional title/author and poem textarea; optional image/PDF upload
 - Digits 0/1 roll to I; math words→symbols; fragmentation-style flicker
 
+[1.2.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.2.0
 [1.1.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.1.0
 [1.0.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.0.0
 [0.3.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.3.0
