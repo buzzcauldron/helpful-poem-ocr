@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>murmur — Cameron Barnett</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "SF Mono", "Consolas", monospace;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      min-height: 100vh;
+      margin: 0;
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .byline {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+    .poem {
+      max-width: 420px;
+      font-size: 1rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .poem .stanza { margin-bottom: 1.5rem; }
+    .poem .stanza-num {
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 0.25rem;
+    }
+    .page-break {
+      margin: 2.5rem 0;
+      text-align: center;
+      color: #444;
+      font-size: 0.75rem;
+    }
+    .roll {
+      display: inline-block;
+      font-variant-numeric: tabular-nums;
+      min-width: 1ch;
+    }
+    .roll.done { animation: none; }
+    .symbol-roll {
+      display: inline-block;
+      min-width: 1ch;
+    }
+    .unstable {
+      display: inline-block;
+      animation: unstable 0.35s ease-in-out infinite;
+    }
+    .unstable:nth-child(6n) { animation-delay: 0s; }
+    .unstable:nth-child(6n+1) { animation-delay: -0.07s; }
+    .unstable:nth-child(6n+2) { animation-delay: -0.14s; }
+    .unstable:nth-child(6n+3) { animation-delay: -0.21s; }
+    .unstable:nth-child(6n+4) { animation-delay: -0.1s; }
+    .unstable:nth-child(6n+5) { animation-delay: -0.18s; }
+    @keyframes unstable {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+      20% { transform: translate(1px, -1px) rotate(0.3deg); opacity: 0.75; }
+      40% { transform: translate(-1px, 0.5px) rotate(-0.2deg); opacity: 0.9; }
+      60% { transform: translate(0.5px, 1px) rotate(0.2deg); opacity: 0.8; }
+      80% { transform: translate(-0.5px, -0.5px) rotate(-0.15deg); opacity: 0.85; }
+    }
+    .input-section {
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 2rem;
+    }
+    .input-section label {
+      display: block;
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+    .input-section input,
+    .input-section textarea {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 14px;
+      padding: 0.5rem 0.75rem;
+    }
+    .input-section input { margin-bottom: 0.75rem; }
+    .input-section textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .input-section input:focus,
+    .input-section textarea:focus {
+      outline: none;
+      border-color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="input-section">
+    <label for="byline-input">Title / author (optional)</label>
+    <input type="text" id="byline-input" placeholder="e.g. murmur — Cameron Barnett">
+    <label for="poem-input">Your poem (optional — leave blank for default)</label>
+    <textarea id="poem-input" placeholder="Paste or type your own poem here..."></textarea>
+  </div>
+  <p class="byline" id="byline">murmur — Cameron Barnett</p>
+  <main class="poem" id="poem"></main>
+
+  <script>
+    const mathWords = {
+      'plus': '+',
+      'minus': '−',
+      'times': '×',
+      'divided by': '÷',
+      'equals': '=',
+      'squared': '²',
+      'cubed': '³',
+      'less than': '<',
+      'greater than': '>',
+      'less than or equal to': '≤',
+      'greater than or equal to': '≥',
+      'not equal to': '≠',
+      'approximately': '≈',
+      'infinity': '∞',
+      'pi': 'π',
+      'square root': '√',
+      'power': '^'
+    };
+
+    const digits = '01';
+    const rollToChar = 'I';
+    const rollIntervalMs = 420;
+    const rollStepsBeforeI = 12;
+    const digitHoldMs = 420;
+    const SYMBOL_CYCLE = ['+', '−', '×', '÷', '=', '∞', '√', 'π', '^'];
+    const SYMBOL_PHASE_OFFSET_MS = 210;
+
+    function replaceMathWords(text) {
+      let out = text;
+      const keys = Object.keys(mathWords).sort((a, b) => b.length - a.length);
+      for (const key of keys) {
+        const re = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        out = out.replace(re, mathWords[key]);
+      }
+      return out;
+    }
+
+    function isDigit(c) {
+      return c === '0' || c === '1';
+    }
+
+    function isMathSymbol(c) {
+      return SYMBOL_CYCLE.indexOf(c) !== -1 || '²³<>≤≠≈'.indexOf(c) !== -1;
+    }
+
+    function isFragmentationChar(c) {
+      return c === '•' || c === '·' || c === '~' || c === '_';
+    }
+
+    function rollDigitToI(el, fromChar, delay) {
+      el.textContent = fromChar;
+      el.classList.remove('done');
+      const startIdx = digits.indexOf(fromChar);
+      const binaryRun = (startIdx >= 0 ? digits.slice(startIdx) : '') + digits.repeat(Math.ceil(rollStepsBeforeI / 2)).slice(0, rollStepsBeforeI);
+      const sequence = binaryRun + rollToChar;
+      let step = 0;
+      setTimeout(() => {
+        const intervalId = setInterval(() => {
+          step++;
+          el.textContent = sequence[step] ?? rollToChar;
+          if (el.textContent === rollToChar) {
+            el.classList.add('done');
+            clearInterval(intervalId);
+          }
+        }, rollIntervalMs);
+      }, digitHoldMs);
+    }
+
+    function startSymbolRoll(el, symbol) {
+      const cycle = SYMBOL_CYCLE;
+      let idx = cycle.indexOf(symbol);
+      if (idx === -1) idx = 0;
+      el.textContent = cycle[idx];
+      setTimeout(() => {
+        setInterval(() => {
+          idx = (idx + 1) % cycle.length;
+          el.textContent = cycle[idx];
+        }, rollIntervalMs);
+      }, SYMBOL_PHASE_OFFSET_MS);
+    }
+
+    const DEFAULT_BYLINE = 'murmur — Cameron Barnett';
+    const DEFAULT_POEM =
+`1.
+I · · oun. · --_ r
+n.e er lt • hole,
+I onl felt .m . •
+di i ·ions.
+•
+•
+If the bo. • were a senten·ce,
+•. ould we place . the heart
+behind an ·ampersand
+or between brackets?
+0.
+_ _en
+was younger
+learned that a rainbow
+• s ju t a trick, a kiss
+I was younger,
+• st pped giving
+• 1 • e · for fear
+of being tric ·ed.
+l
+I
+•
+•
+•
+•
+•
+•
+•
+•
+•
+n
+2
+•
+•
+•
+•
+w
+•
+•
+•
+•
+,of light and water When
+1.
+Th b~g ha ,·g • , aft r· all,
+JU 't an . h · h y, , n
+th o y 1 · h all • · _ 1 •
+
+——— 0 ———
+
+•
+•
+•
+•
+0.
+Ir' no wond1er
+I find m· . best
+re.fl1e ction tow,ar,d
+the margins •
+of most things.
+1.
+•
+If the body is just a. tri,ck,
+•
+a coll,ective· norhingn,ess,
+qu.ainc an,d •c.oded, all one.s
+and z,eros, then it's no wonder
+I n.ever felt whole
+until yo,u kis.sed m1e.
+' •
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+• •`;
+
+    function applyToElement(el, raw) {
+      const text = raw ?? el.textContent;
+      const withSymbols = replaceMathWords(text);
+      el.innerHTML = '';
+      for (const char of withSymbols) {
+        if (isDigit(char)) {
+          const span = document.createElement('span');
+          span.className = 'roll';
+          span.textContent = char;
+          el.appendChild(span);
+        } else if (isMathSymbol(char)) {
+          const span = document.createElement('span');
+          span.className = 'symbol-roll';
+          el.appendChild(span);
+          startSymbolRoll(span, char);
+        } else if (isFragmentationChar(char)) {
+          const span = document.createElement('span');
+          span.className = 'unstable';
+          span.textContent = char;
+          el.appendChild(span);
+        } else {
+          el.appendChild(document.createTextNode(char));
+        }
+      }
+      el.querySelectorAll('.roll').forEach((rollEl, i) => {
+        setTimeout(() => rollDigitToI(rollEl, rollEl.textContent, 0), i * 120);
+      });
+    }
+
+    function updateDisplay() {
+      const bylineRaw = document.getElementById('byline-input').value.trim();
+      const poemRaw = document.getElementById('poem-input').value;
+      const bylineEl = document.getElementById('byline');
+      const poemEl = document.getElementById('poem');
+      bylineEl.textContent = bylineRaw || DEFAULT_BYLINE;
+      poemEl.textContent = poemRaw || DEFAULT_POEM;
+      applyToElement(bylineEl);
+      applyToElement(poemEl);
+    }
+
+    document.getElementById('byline-input').addEventListener('input', () => {
+      clearTimeout(window._poemTimer);
+      window._poemTimer = setTimeout(updateDisplay, 200);
+    });
+    document.getElementById('poem-input').addEventListener('input', () => {
+      clearTimeout(window._poemTimer);
+      window._poemTimer = setTimeout(updateDisplay, 200);
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
