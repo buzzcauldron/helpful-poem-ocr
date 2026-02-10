@@ -103,6 +103,18 @@
       outline: none;
       border-color: #555;
     }
+    .input-section input[type="file"] {
+      padding: 0.25rem 0;
+      font-size: 12px;
+    }
+    .ocr-status {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
+    .ocr-status.working { color: #888; }
+    .ocr-status.error { color: #822; }
   </style>
 </head>
 <body>
@@ -111,10 +123,18 @@
     <input type="text" id="byline-input" placeholder="e.g. murmur — Cameron Barnett">
     <label for="poem-input">Your poem (optional — leave blank for default)</label>
     <textarea id="poem-input" placeholder="Paste or type your own poem here..."></textarea>
+    <label for="file-input">Or upload an image — the site will badly OCR it</label>
+    <input type="file" id="file-input" accept="image/*,.pdf">
+    <p class="ocr-status" id="ocr-status"></p>
   </div>
   <p class="byline" id="byline">murmur — Cameron Barnett</p>
   <main class="poem" id="poem"></main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
   <script>
     const mathWords = {
       'plus': '+',
@@ -330,6 +350,90 @@ until yo,u kis.sed m1e.
     document.getElementById('poem-input').addEventListener('input', () => {
       clearTimeout(window._poemTimer);
       window._poemTimer = setTimeout(updateDisplay, 200);
+    });
+
+    function degradeOCRText(ocrText) {
+      const frag = ['•', '·', '~', '_'];
+      let out = '';
+      const lines = ocrText.split(/\n/);
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          const r = Math.random();
+          if (r < 0.045) {
+            out += frag[Math.floor(Math.random() * frag.length)];
+          } else if (r < 0.07 && i > 0 && i < line.length - 1 && /\w/.test(c)) {
+            out += c + '·';
+          } else if (r < 0.095 && /\w/.test(c)) {
+            if (c === 'o' || c === 'O') out += Math.random() < 0.5 ? '0' : c;
+            else if (c === 'l' || c === 'i' || c === 'I') out += Math.random() < 0.5 ? '1' : c;
+            else out += c;
+          } else {
+            out += c;
+          }
+        }
+        if (li < lines.length - 1) out += '\n';
+      }
+      return out;
+    }
+
+    async function pdfPagesToImages(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdf.numPages;
+      const scale = 2;
+      const pageTexts = [];
+      for (let n = 1; n <= numPages; n++) {
+        const page = await pdf.getPage(n);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        pageTexts.push(blob);
+      }
+      return pageTexts;
+    }
+
+    document.getElementById('file-input').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const status = document.getElementById('ocr-status');
+      status.textContent = 'Running bad OCR…';
+      status.className = 'ocr-status working';
+      try {
+        let text = '';
+        if (file.type === 'application/pdf') {
+          status.textContent = 'Loading PDF…';
+          const pageBlobs = await pdfPagesToImages(file);
+          for (let i = 0; i < pageBlobs.length; i++) {
+            status.textContent = 'OCR page ' + (i + 1) + ' of ' + pageBlobs.length + '…';
+            const { data: { text: pageText } } = await Tesseract.recognize(pageBlobs[i], 'eng', {
+              logger: (m) => { if (m.status) status.textContent = 'Page ' + (i + 1) + ': ' + m.status; }
+            });
+            text += (pageText || '').trim();
+            if (i < pageBlobs.length - 1) text += '\n\n——— ' + (i + 1) + ' ———\n\n';
+          }
+        } else {
+          const { data } = await Tesseract.recognize(file, 'eng', {
+            logger: (m) => { if (m.status) status.textContent = m.status; }
+          });
+          text = data.text || '';
+        }
+        const bad = degradeOCRText(text);
+        document.getElementById('poem-input').value = bad;
+        document.getElementById('byline-input').value = file.name.replace(/\.[^.]+$/, '') || 'Uploaded';
+        updateDisplay();
+        status.textContent = 'Done.';
+        status.className = 'ocr-status';
+      } catch (err) {
+        status.textContent = 'OCR failed: ' + (err.message || 'unknown error');
+        status.className = 'ocr-status error';
+      }
+      e.target.value = '';
     });
 
     updateDisplay();
