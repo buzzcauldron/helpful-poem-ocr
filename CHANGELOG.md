@@ -3,6 +3,18 @@
 All notable design and feature changes are versioned with [Semantic Versioning](https://semver.org/).  
 Branches and tags follow `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `release/1.0.0`).
 
+## [1.1.0] - 2025-02-09
+
+### Added
+- LICENSE (MIT) for the repo
+- Fade out text box, upload, and original text (title/author) with labels after 420ms; click to restore
+- Random digit sequence for 2–9: each step shows a random digit; when 9 has appeared 11 times, switch to 0 or 1 and apply roll-to-I rule
+
+### Changed
+- Inputs and textarea use same opacity transition as labels when `meta-faded` is active
+
+---
+
 ## [1.0.0] - 2025-02-09
 
 ### Added
@@ -50,6 +62,7 @@ Branches and tags follow `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`, `release/1.0.0`).
 - Optional title/author and poem textarea; optional image/PDF upload
 - Digits 0/1 roll to I; math words→symbols; fragmentation-style flicker
 
+[1.1.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.1.0
 [1.0.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v1.0.0
 [0.3.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.3.0
 [0.2.0]: https://github.com/buzzcauldron/helpful-poem-ocr/releases/tag/v0.2.0
